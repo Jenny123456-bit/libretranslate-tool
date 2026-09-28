@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中俄翻译工具 | LibreTranslate</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header h1 span { color: var(--accent); }
+  #settingsBtn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  #settingsBtn:hover { border-color: var(--accent); color: var(--accent); }
+  main {
+    flex: 1;
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    display: flex;
+    gap: 16px;
+    flex-direction: column;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .lang-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  select {
+    flex: 1;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  #swapBtn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    border-radius: 6px;
+    width: 40px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  #swapBtn:hover { border-color: var(--accent); }
+  textarea {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 16px;
+    min-height: 160px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.6;
+  }
+  textarea:focus { outline: none; border-color: var(--accent); }
+  .btn-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #charCount { color: var(--muted); font-size: 12px; }
+  #translateBtn {
+    background: #238636;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #translateBtn:hover { background: #2ea043; }
+  #translateBtn:disabled { opacity: .5; cursor: not-allowed; }
+  .output {
+    min-height: 160px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 16px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--muted);
+  }
+  .output.done { color: var(--text); }
+  .output.error { color: #f85149; }
+  .ghost {
+    align-self: flex-end;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .ghost:hover { border-color: var(--accent2); color: var(--accent2); }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 12px;
+    border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  dialog {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    width: min(480px, 90vw);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog h2 { font-size: 16px; margin-bottom: 12px; }
+  dialog input {
+    width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  dialog p { color: var(--muted); font-size: 12px; margin-bottom: 14px; line-height: 1.6; }
+  .dlg-btns { display: flex; justify-content: flex-end; gap: 8px; }
+  .dlg-btns button {
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+  }
+  .dlg-btns .primary { background: #238636; border: none; color: #fff; font-weight: 600; }
+  @media (min-width: 760px) {
+    main { flex-direction: row; }
+    .panel { flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>中俄翻译工具 <span>·</span> LibreTranslate</h1>
+  <button id="settingsBtn">⚙ 设置</button>
+</header>
+
+<main>
+  <!-- 输入面板 -->
+  <section class="panel">
+    <div class="lang-bar">
+      <select id="sourceLang" aria-label="源语言">
+        <option value="zh">中文</option>
+        <option value="ru">Русский（俄文）</option>
+        <option value="auto">自动检测</option>
+      </select>
+      <button id="swapBtn" title="交换语言">⇄</button>
+      <select id="targetLang" aria-label="目标语言">
+        <option value="ru">Русский（俄文）</option>
+        <option value="zh">中文</option>
+      </select>
+    </div>
+    <textarea id="input" maxlength="5000" placeholder="在这里输入要翻译的文本…"></textarea>
+    <div class="btn-bar">
+      <span id="charCount">0 / 5000</span>
+      <button id="translateBtn">翻 译</button>
+    </div>
+  </section>
+
+  <!-- 结果面板 -->
+  <section class="panel">
+    <div id="output" class="output">翻译结果会显示在这里</div>
+    <button id="copyBtn" class="ghost">复制结果</button>
+  </section>
+</main>
+
+<footer>
+  翻译能力由 <a href="https://libretranslate.com" target="_blank" rel="noopener">LibreTranslate</a> 提供 ·
+  开源翻译引擎 · 纯前端实现
+</footer>
+
+<!-- 设置弹窗 -->
+<dialog id="settingsDlg">
+  <h2>⚙ API 设置</h2>
+  <input id="apiInput" type="text" placeholder="https://libretranslate.com/translate">
+  <p>
+    翻译接口地址（POST /translate）。默认使用 LibreTranslate 公共实例，匿名请求有限额；
+    若频繁失败，可更换其他镜像地址，或按官方文档自行部署后填入自建地址。
+  </p>
+  <div class="dlg-btns">
+    <button id="resetApi">恢复默认</button>
+    <button id="saveApi" class="primary">保存</button>
+  </div>
+</dialog>
+
+<script>
+  const DEFAULT_API = 'https://libretranslate.com/translate';
+  const $ = id => document.getElementById(id);
+  const input = $('input'), output = $('output'), translateBtn = $('translateBtn');
+  const sourceLang = $('sourceLang'), targetLang = $('targetLang');
+
+  let apiBase = localStorage.getItem('lt_api_base') || DEFAULT_API;
+  $('apiInput').value = apiBase;
+
+  // 字数统计
+  input.addEventListener('input', () => {
+    $('charCount').textContent = input.value.length + ' / 5000';
+  });
+
+  // 交换语言
+  $('swapBtn').addEventListener('click', () => {
+    if (sourceLang.value === 'auto') return;
+    const s = sourceLang.value, t = targetLang.value;
+    sourceLang.value = t;
+    targetLang.value = s;
+    const txt = input.value;
+    if (output.classList.contains('done')) {
+      input.value = output.textContent;
+      output.textContent = txt || '翻译结果会显示在这里';
+      output.classList.toggle('done', !!txt);
+      $('charCount').textContent = input.value.length + ' / 5000';
+    }
+  });
+
+  // 翻译
+  async function translate() {
+    const q = input.value.trim();
+    if (!q) { input.focus(); return; }
+    translateBtn.disabled = true;
+    translateBtn.textContent = '翻译中…';
+    output.className = 'output';
+    output.textContent = '正在翻译，请稍候…';
+    try {
+      const res = await fetch(apiBase, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          q: q,
+          source: sourceLang.value,
+          target: targetLang.value,
+          format: 'text'
+        })
+      });
+      if (!res.ok) throw new Error('接口返回错误（HTTP ' + res.status + '）');
+      const data = await res.json();
+      output.textContent = data.translatedText || '（未返回结果）';
+      output.classList.add('done');
+    } catch (err) {
+      output.classList.add('error');
+      output.textContent =
+        '翻译失败：' + err.message +
+        '\n\n常见原因：\n' +
+        '1. 公共 API 匿名请求达到限额，请稍后再试；\n' +
+        '2. 网络无法访问接口地址；\n' +
+        '3. 接口地址已失效——点击右上角"⚙ 设置"更换 API 地址。';
+    } finally {
+      translateBtn.disabled = false;
+      translateBtn.textContent = '翻 译';
+    }
+  }
+  translateBtn.addEventListener('click', translate);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) translate();
+  });
+
+  // 复制结果
+  $('copyBtn').addEventListener('click', async () => {
+    const text = output.textContent;
+    if (!text || text === '翻译结果会显示在这里' || output.classList.contains('error')) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      $('copyBtn').textContent = '已复制 ✓';
+      setTimeout(() => $('copyBtn').textContent = '复制结果', 1500);
+    } catch (_) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      $('copyBtn').textContent = '已复制 ✓';
+      setTimeout(() => $('copyBtn').textContent = '复制结果', 1500);
+    }
+  });
+
+  // 设置弹窗
+  const dlg = $('settingsDlg');
+  $('settingsBtn').addEventListener('click', () => {
+    $('apiInput').value = apiBase;
+    dlg.showModal();
+  });
+  $('saveApi').addEventListener('click', () => {
+    let v = $('apiInput').value.trim();
+    if (!v) v = DEFAULT_API;
+    apiBase = v;
+    localStorage.setItem('lt_api_base', v);
+    dlg.close();
+  });
+  $('resetApi').addEventListener('click', () => {
+    apiBase = DEFAULT_API;
+    $('apiInput').value = DEFAULT_API;
+    localStorage.removeItem('lt_api_base');
+  });
+</script>
+
+</body>
+</html>
