@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>校园模式 · 中俄双语助手</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/materialize.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/material-icons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <style>
+    .brand-logo { font-weight: 600; }
+    .section-card { padding: 18px; border-radius: 10px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.08); margin-bottom:18px; }
+    .bilingual-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .bilingual-grid textarea { min-height:160px; }
+    .term-chip { display:inline-block; padding:2px 8px; margin:2px; border-radius:12px; background:#e3f2fd; font-size:13px; }
+    .lang-label { font-size:12px; color:#888; }
+    .disabled-note { padding:24px; text-align:center; color:#b71c1c; }
+    pre.out { white-space:pre-wrap; background:#f5f5f5; padding:12px; border-radius:8px; min-height:60px; }
+  </style>
+</head>
+<body>
+<header>
+  <nav>
+    <div class="nav-wrapper container">
+      <a href="{{ url_for('Main app.index') }}" class="brand-logo noline">
+        <i class="material-icons">translate</i><span>校园模式 · 中俄双语助手</span>
+      </a>
+      <ul class="right hide-on-med-and-down">
+        <li><a href="{{ url_for('Main app.index') }}">翻译</a></li>
+        <li><a href="/campus">校园模式</a></li>
+      </ul>
+    </div>
+  </nav>
+</header>
+
+<main class="container" style="margin-top:18px;max-width:980px;">
+  {% if not campus_enabled %}
+  <div class="disabled-note section-card">
+    校园模式未启用。请使用 <code>--campus-mode</code> 参数启动 LibreTranslate（例如
+    <code>libretranslate --campus-mode</code>）。
+  </div>
+  {% else %}
+
+  <ul class="tabs">
+    <li class="tab"><a href="#tab-terms" class="active">术语库</a></li>
+    <li class="tab"><a href="#tab-tpl">场景模板</a></li>
+    <li class="tab"><a href="#tab-name">人名音译</a></li>
+    <li class="tab"><a href="#tab-bi">对照排版</a></li>
+  </ul>
+
+  <!-- 术语库 -->
+  <div id="tab-terms" class="section-card">
+    <h5>课程 / 专业术语库</h5>
+    <div class="input-field">
+      <input id="termSearch" type="text" placeholder="搜索术语（中文或俄文）" oninput="loadTerms()">
+    </div>
+    <div id="termList" class="section" style="margin-bottom:14px;"></div>
+    <div class="row">
+      <div class="input-field col s3"><input id="tZh" type="text" placeholder="中文"><label for="tZh">中文</label></div>
+      <div class="input-field col s3"><input id="tRu" type="text" placeholder="俄文"><label for="tRu">俄文</label></div>
+      <div class="input-field col s2"><input id="tCat" type="text" placeholder="类别"><label for="tCat">类别</label></div>
+      <div class="input-field col s2"><input id="tNote" type="text" placeholder="备注"><label for="tNote">备注</label></div>
+      <div class="col s2"><button class="btn" onclick="addTerm()">添加</button></div>
+    </div>
+  </div>
+
+  <!-- 场景模板 -->
+  <div id="tab-tpl" class="section-card">
+    <h5>面向场景的中俄对照模板</h5>
+    <div class="row">
+      <div class="input-field col s6">
+        <select id="tplSelect" onchange="onTplChange()"></select>
+        <label>选择模板</label>
+      </div>
+      <div class="input-field col s4">
+        <select id="tplLang">
+          <option value="both">中俄双语</option>
+          <option value="zh">仅中文</option>
+          <option value="ru">仅俄文</option>
+        </select>
+        <label>输出语言</label>
+      </div>
+      <div class="col s2"><button class="btn" onclick="renderTpl()">生成</button></div>
+    </div>
+    <div id="tplFields" class="section"></div>
+    <pre id="tplOut" class="out"></pre>
+  </div>
+
+  <!-- 人名音译 -->
+  <div id="tab-name" class="section-card">
+    <h5>人名音译</h5>
+    <div class="row">
+      <div class="input-field col s5"><input id="nameIn" type="text" placeholder="姓名"><label for="nameIn">姓名</label></div>
+      <div class="input-field col s4">
+        <select id="nameDir">
+          <option value="ru2zh">俄文 → 中文</option>
+          <option value="zh2ru">中文 → 俄文</option>
+        </select><label>方向</label>
+      </div>
+      <div class="col s3"><button class="btn" onclick="translit()">音译</button></div>
+    </div>
+    <div class="input-field col s12">
+      <input id="namePinyin" type="text" placeholder="可选：中文名拼音（空格分隔，去掉声调），用于更准确的中文→俄文">
+      <label for="namePinyin">拼音（可选）</label>
+    </div>
+    <pre id="nameOut" class="out"></pre>
+  </div>
+
+  <!-- 对照排版 -->
+  <div id="tab-bi" class="section-card">
+    <h5>一键中俄对照排版</h5>
+    <div class="row">
+      <div class="input-field col s3">
+        <select id="biSrc"><option value="zh">中文</option><option value="ru">俄文</option></select>
+        <label>源语言</label>
+      </div>
+      <div class="input-field col s3">
+        <select id="biTgt"><option value="ru">俄文</option><option value="zh">中文</option></select>
+        <label>目标语言</label>
+      </div>
+      <div class="col s2"><button class="btn" onclick="bilingual()">翻译对照</button></div>
+    </div>
+    <div class="bilingual-grid">
+      <div>
+        <div class="lang-label">原文</div>
+        <textarea id="biSrcText" placeholder="在此输入要翻译的文本…"></textarea>
+      </div>
+      <div>
+        <div class="lang-label">译文（已套用术语库）</div>
+        <textarea id="biTgtText" readonly></textarea>
+      </div>
+    </div>
+    <div class="section"><span class="lang-label">本次套用术语：</span><span id="biTerms"></span></div>
+  </div>
+
+  {% endif %}
+</main>
+
+<script src="{{ url_for('static', filename='js/materialize.min.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    var tabs = document.querySelectorAll('.tabs');
+    M.Tabs.init(tabs);
+    var selects = document.querySelectorAll('select');
+    M.FormSelect.init(selects);
+    {% if campus_enabled %}loadTerms(); loadTemplates();{% endif %}
+  });
+
+  async function api(path, opts){ return await fetch(path, opts); }
+
+  function loadTerms(){
+    var q = document.getElementById('termSearch').value;
+    var u = '/terminology' + (q ? ('?q=' + encodeURIComponent(q)) : '');
+    fetch(u).then(r=>r.json()).then(function(d){
+      var html = (d||[]).map(function(t){
+        return '<span class="term-chip">' + (t.zh||'') + ' ⇄ ' + (t.ru||'') +
+               (t.category ? ' · ' + t.category : '') + '</span>';
+      }).join('');
+      document.getElementById('termList').innerHTML = html || '<span class="lang-label">暂无术语</span>';
+    }).catch(function(){ document.getElementById('termList').innerHTML=''; });
+  }
+
+  function addTerm(){
+    var data = {
+      zh: document.getElementById('tZh').value,
+      ru: document.getElementById('tRu').value,
+      category: document.getElementById('tCat').value,
+      note: document.getElementById('tNote').value
+    };
+    fetch('/terminology', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(data)}).then(function(r){ return r.json(); }).then(function(){
+      document.getElementById('tZh').value='';
+      document.getElementById('tRu').value='';
+      document.getElementById('tCat').value='';
+      document.getElementById('tNote').value='';
+      loadTerms();
+    });
+  }
+
+  function loadTemplates(){
+    fetch('/campus/templates').then(r=>r.json()).then(function(list){
+      var sel = document.getElementById('tplSelect');
+      sel.innerHTML = (list||[]).map(function(t){
+        return '<option value="'+t.id+'">'+t.category+' / '+t.id+'</option>';
+      }).join('');
+      M.FormSelect.init(sel);
+      onTplChange();
+    });
+  }
+
+  function onTplChange(){
+    var id = document.getElementById('tplSelect').value;
+    fetch('/campus/templates').then(r=>r.json()).then(function(list){
+      var t = (list||[]).find(function(x){ return x.id===id; });
+      if(!t) return;
+      var html = (t.fields||[]).map(function(f){
+        return '<div class="input-field col s6"><input id="f_'+f+'" type="text"><label for="f_'+f+'">'+f+'</label></div>';
+      }).join('');
+      document.getElementById('tplFields').innerHTML = '<div class="row">'+html+'</div>';
+      M.updateTextFields();
+    });
+  }
+
+  function renderTpl(){
+    var id = document.getElementById('tplSelect').value;
+    var lang = document.getElementById('tplLang').value;
+    var fields = {};
+    document.querySelectorAll('#tplFields input').forEach(function(inp){
+      fields[inp.id.replace('f_','')] = inp.value;
+    });
+    fetch('/campus/render', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({template_id:id, lang:lang, fields:fields})})
+      .then(r=>r.json()).then(function(d){ document.getElementById('tplOut').textContent = JSON.stringify(d, null, 2); });
+  }
+
+  function translit(){
+    var name = document.getElementById('nameIn').value;
+    var dir = document.getElementById('nameDir').value;
+    var pinyin = document.getElementById('namePinyin').value;
+    fetch('/campus/transliterate', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name:name, direction:dir, pinyin:pinyin})})
+      .then(r=>r.json()).then(function(d){ document.getElementById('nameOut').textContent = d.result || ''; });
+  }
+
+  function bilingual(){
+    var q = document.getElementById('biSrcText').value;
+    var src = document.getElementById('biSrc').value;
+    var tgt = document.getElementById('biTgt').value;
+    fetch('/bilingual', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({q:q, source:src, target:tgt})})
+      .then(r=>r.json()).then(function(d){
+        document.getElementById('biTgtText').value = d.target || '';
+        var terms = (d.terms||[]).map(function(t){ return t.zh+' ⇄ '+t.ru; }).join('，');
+        document.getElementById('biTerms').innerHTML = terms ? terms : '<span class="lang-label">无</span>';
+      }).catch(function(e){ document.getElementById('biTgtText').value = '翻译失败'; });
+  }
+</script>
+</body>
+</html>

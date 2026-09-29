@@ -1,0 +1,32 @@
+{
+  "templates": [
+    {
+      "id": "notice",
+      "category": "通知",
+      "fields": ["date", "title", "body", "contact"],
+      "zh": "【通知】{date}\n主题：{title}\n{body}\n联系人：{contact}",
+      "ru": "[Уведомление] {date}\nТема: {title}\n{body}\nКонтакт: {contact}"
+    },
+    {
+      "id": "email",
+      "category": "邮件",
+      "fields": ["to", "subject", "greeting", "body", "sign"],
+      "zh": "收件人：{to}\n主题：{subject}\n{greeting}\n{body}\n{sign}",
+      "ru": "Кому: {to}\nТема: {subject}\n{greeting}\n{body}\n{sign}"
+    },
+    {
+      "id": "courseware_title",
+      "category": "课件标题",
+      "fields": ["course", "lesson", "teacher"],
+      "zh": "《{course}》第{lesson}讲 — 主讲：{teacher}",
+      "ru": "«{course}», занятие {lesson} — преподаватель: {teacher}"
+    },
+    {
+      "id": "meeting_invite",
+      "category": "会议邀请",
+      "fields": ["date", "time", "place", "topic", "host"],
+      "zh": "会议邀请\n时间：{date} {time}\n地点：{place}\n议题：{topic}\n主持人：{host}",
+      "ru": "Приглашение на собрание\nВремя: {date} {time}\nМесто: {place}\nПовестка: {topic}\nВедущий: {host}"
+    }
+  ]
+}
